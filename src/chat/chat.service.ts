@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 export interface ChatResponse {
   id: string;
@@ -44,9 +44,9 @@ export class ChatService {
         throw new Error('API 调用失败');
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as ChatResponse;
       console.log('API 响应成功:', data);
-      return data as ChatResponse;
+      return data;
     } catch (err) {
       console.error('发送消息失败:', err);
       throw new Error('消息发送失败' + err);
