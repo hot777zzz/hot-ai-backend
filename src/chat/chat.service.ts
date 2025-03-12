@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export interface ChatResponse {
   id: string;
@@ -12,43 +13,33 @@ export interface ChatResponse {
 
 @Injectable()
 export class ChatService {
+  constructor(private readonly configService: ConfigService) {}
+
   async sendMessage(message: string): Promise<ChatResponse> {
     const options = {
       method: 'POST',
       headers: {
-        Authorization: process.env.DEEPSEEK_API_KEY || '', // 从环境变量获取 API key
+        Authorization: this.configService.get<string>('DEER_API_KEY') || '', // 从环境变量获取 API key
         'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'DeerAPI/1.0.0 (https://api.deerapi.com)',
       },
       body: JSON.stringify({
-        model: 'deepseek-ai/DeepSeek-V3',
+        model: 'deepseek-chat',
         messages: [{ role: 'user', content: message }],
         stream: false,
-        max_tokens: 512,
-        stop: null,
-        temperature: 0.7,
-        top_p: 0.7,
-        top_k: 50,
-        frequency_penalty: 0.5,
       }),
     };
 
     try {
       const response = await fetch(
-        'https://api.siliconflow.cn/v1/chat/completions',
+        'https://api.deerapi.com/v1/chat/completions',
         options,
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API 响应错误:', errorText);
-        throw new Error('API 调用失败');
-      }
-
+      console.log(response);
       const data = (await response.json()) as ChatResponse;
-      console.log('API 响应成功:', data);
       return data;
     } catch (err) {
-      console.error('发送消息失败:', err);
       throw new Error('消息发送失败' + err);
     }
   }

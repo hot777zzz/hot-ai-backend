@@ -6,9 +6,11 @@ import { UserModule } from './user/user.module';
 import { JwtAuthGuard } from './user/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { ChatModule } from './chat/chat.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: 'localhost',
