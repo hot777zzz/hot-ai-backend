@@ -4,9 +4,6 @@ import { ConfigService } from '@nestjs/config';
 export interface ChatResponse {
   id: string;
   choices: {
-    delta?: {
-      content?: string;
-    };
     message?: {
       role: string;
       content: string;
@@ -18,7 +15,7 @@ export interface ChatResponse {
 export class ChatService {
   constructor(private readonly configService: ConfigService) {}
 
-  async *sendMessage(message: string): AsyncGenerator<ChatResponse> {
+  async sendMessage(message: string): Promise<any> {
     if (!message) {
       throw new Error('消息不能为空');
     }
@@ -34,7 +31,6 @@ export class ChatService {
         Authorization: apiKey,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'DeerAPI/1.0.0 (https://api.deerapi.com)',
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -42,7 +38,6 @@ export class ChatService {
           { role: 'system', content: 'You are a helpful assistant.' },
           { role: 'user', content: message },
         ],
-        stream: true,
       }),
     };
 
@@ -60,46 +55,14 @@ export class ChatService {
         );
       }
 
-      if (!response.body) {
-        throw new Error('响应体为空');
-      }
+      const result = (await response.json()) as ChatResponse;
+      console.log('收到API响应:', result);
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      console.log('开始读取响应流...');
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('响应流读取完成');
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
-
-          const data = trimmedLine.slice(6);
-          if (data === '[DONE]') {
-            console.log('收到结束标记');
-            return;
-          }
-
-          try {
-            const parsed = JSON.parse(data) as ChatResponse;
-            console.log('解析到响应:', parsed.choices[0]?.delta?.content);
-            yield parsed;
-          } catch (e) {
-            console.error('JSON解析错误:', e, '原始数据:', data);
-            throw e;
-          }
-        }
-      }
+      return {
+        code: 200,
+        message: '请求成功',
+        data: result,
+      };
     } catch (err) {
       console.error('请求处理错误:', err);
       throw err;
